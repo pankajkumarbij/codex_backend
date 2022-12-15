@@ -5,33 +5,36 @@ const jwt = require("jsonwebtoken");
 
 var userController = { 
   Register(req, res){
-    if(req.body.password != "" && req.body.password == req.body.confirmPassword){
       bcrypt.hash(req.body.password, 12, function(err, hash){
         const {userName, email, fullName, mobileNo } = req.body;
         const password= hash;
         var newUser = new User({userName, email, fullName, mobileNo, password});
         newUser.save()
         .then(user => {
-          var message={success: true, message: "successfully registered!"};
+          const email = user.email;
+          const userId = user._id;
+          const userName = user.userName;
+          var token = jwt.sign({email, userName, userId}, "secretkeyforcodex", { expiresIn: "1h"});
+          var message = {success: true, message: "successfully registered!", token: token};
           res.json(message);
+          console.log(message);
         })
         .catch(err => {
           res.json({error: err, message: "something went wrong!!"});
+          console.log(err);
         })     
       });
-    }
-    else{
-      res.json({error: true, message: "password and confirm password not matched"});
-    }
   },
   Login(req, res){
-    const {email, password} = req.body;
+    const { email, password } = req.body;
     User.findOne({email},function(err,user){
     if(!user){
+      console.log(user);
       res.json({error: err, message:"user not found!!"});
     }
     else if(user){
       bcrypt.compare(password, user.password,function(err,result){
+        console.log(result);
         if(result){
           const email = user.email;
           const userId = user._id;
